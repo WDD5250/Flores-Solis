@@ -1,19 +1,23 @@
-// =======================================
-// FLORES SOLIS CALENDAR (FIXED + SYNCED)
-// =======================================
+// ===============================
+// FLORES SOLIS CALENDAR ENGINE
+// ===============================
 
-// ---------- Leap logic ----------
-function isGregorianLeapYear(y) {
-  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+// ---------- Constants ----------
+const MS_PER_DAY = 86400000;
+
+// ---------- Leap year logic ----------
+function isGregorianLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
+// Viola leap day if Feb 29 occurs during Viola
 function violaDays(fsYear) {
-  // February belongs to Gregorian year fsYear + 1
-  return isGregorianLeapYear(fsYear + 1) ? 30 : 29;
+  const gregorianFebYear = fsYear + 1;
+  return isGregorianLeapYear(gregorianFebYear) ? 30 : 29;
 }
 
-// ---------- Month definition ----------
-function getFSMoths(fsYear) {
+// ---------- Flores Solis months ----------
+function getFSMonths(fsYear) {
   return [
     { name: "Narcissus", days: 31 },
     { name: "Serrulata", days: 30 },
@@ -30,50 +34,58 @@ function getFSMoths(fsYear) {
   ];
 }
 
-// ---------- State ----------
-let fsYear = 0;
-let fsMonth = 0;
-let fsDay = 1;
+// ---------- Safe date creation (FIXES YEAR 0–99 BUG) ----------
+function makeDate(year, month, day) {
+  const d = new Date(0);
+  d.setFullYear(year, month, day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
-// ---------- Gregorian → FS ----------
+// ---------- State ----------
+let fsYear, fsMonth, fsDay;
+
+// ---------- Gregorian → Flores Solis ----------
 function gregorianToFS(date) {
   const gYear = date.getFullYear();
-  const fsStartThisYear = new Date(gYear, 2, 20); // Mar 20
+  const fsStartThisYear = makeDate(gYear, 2, 20);
 
-  const year = date >= fsStartThisYear ? gYear : gYear - 1;
-  const fsStart = new Date(year, 2, 20);
+  const fsYear = date >= fsStartThisYear ? gYear : gYear - 1;
+  const fsStart = makeDate(fsYear, 2, 20);
 
-  let offset = Math.floor((date - fsStart) / 86400000);
-  const months = getFSMoths(year);
+  let offset = Math.floor((date - fsStart) / MS_PER_DAY);
+  const months = getFSMonths(fsYear);
 
-  let m = 0;
-  let d = offset + 1;
+  let month = 0;
+  let day = offset + 1;
 
-  while (d > months[m].days) {
-    d -= months[m].days;
-    m++;
+  while (day > months[month].days) {
+    day -= months[month].days;
+    month++;
   }
 
-  return { year, month: m, day: d };
+  return { year: fsYear, month, day };
 }
 
-// ---------- FS → Gregorian ----------
-function fsToGregorian(year, month, day) {
-  const fsStart = new Date(year, 2, 20);
-  const months = getFSMoths(year);
+// ---------- Flores Solis → Gregorian ----------
+function fsToGregorian(fsYear, fsMonth, fsDay) {
+  const fsStart = makeDate(fsYear, 2, 20);
+  const months = getFSMonths(fsYear);
 
-  let offset = day - 1;
-  for (let i = 0; i < month; i++) offset += months[i].days;
+  let offset = fsDay - 1;
+  for (let i = 0; i < fsMonth; i++) {
+    offset += months[i].days;
+  }
 
-  return new Date(fsStart.getTime() + offset * 86400000);
+  return new Date(fsStart.getTime() + offset * MS_PER_DAY);
 }
 
-// ---------- UI helpers ----------
-function populateMonthSelect() {
+// ---------- Populate month selector ----------
+function populateMonthSelect(fsYear) {
   const select = document.getElementById("monthSelect");
   select.innerHTML = "";
 
-  getFSMoths(fsYear).forEach((m, i) => {
+  getFSMonths(fsYear).forEach((m, i) => {
     const opt = document.createElement("option");
     opt.value = i;
     opt.textContent = m.name;
@@ -83,26 +95,22 @@ function populateMonthSelect() {
 
 // ---------- Render ----------
 function render() {
-  const months = getFSMoths(fsYear);
   const grid = document.getElementById("calendar-grid");
   grid.innerHTML = "";
 
-  // Clamp day if month/year changed
-  if (fsDay > months[fsMonth].days) {
-    fsDay = months[fsMonth].days;
-  }
+  const months = getFSMonths(fsYear);
+  const era = fsYear < 0 ? "AEV" : "PEV";
+  const displayYear = Math.abs(fsYear);
 
-  // Title
   document.getElementById("title").textContent =
-    `${months[fsMonth].name} ${fsYear} PEV`;
+    `Flores Solis Calendar — ${months[fsMonth].name} ${displayYear} ${era}`;
 
-  // Inputs
-  populateMonthSelect();
+  populateMonthSelect(fsYear);
+
   document.getElementById("monthSelect").value = fsMonth;
   document.getElementById("dayInput").value = fsDay;
   document.getElementById("yearInput").value = fsYear;
 
-  // Calendar grid
   for (let i = 1; i <= months[fsMonth].days; i++) {
     const cell = document.createElement("div");
     cell.className = "day";
@@ -111,10 +119,9 @@ function render() {
     grid.appendChild(cell);
   }
 
-  // Gregorian equivalent (ALWAYS synced)
   const g = fsToGregorian(fsYear, fsMonth, fsDay);
   document.getElementById("gregorian-output").textContent =
-    `Gregorian equivalent: ${g.toDateString()}`;
+    `Gregorian: ${g.toDateString()}`;
 }
 
 // ---------- Navigation ----------
@@ -124,11 +131,22 @@ function changeMonth(delta) {
   if (fsMonth < 0) {
     fsMonth = 11;
     fsYear--;
-  } else if (fsMonth > 11) {
+  }
+  if (fsMonth > 11) {
     fsMonth = 0;
     fsYear++;
   }
 
+  fsDay = 1;
+  render();
+}
+
+function goToToday() {
+  const today = new Date();
+  const fs = gregorianToFS(today);
+  fsYear = fs.year;
+  fsMonth = fs.month;
+  fsDay = fs.day;
   render();
 }
 
@@ -138,41 +156,41 @@ function goToFSDate() {
   const d = parseInt(document.getElementById("dayInput").value);
   const y = parseInt(document.getElementById("yearInput").value);
 
-  if (isNaN(m) || isNaN(d) || isNaN(y)) return;
+  const months = getFSMonths(y);
+  if (d < 1 || d > months[m].days) {
+    alert("Invalid day for selected month");
+    return;
+  }
 
   fsYear = y;
   fsMonth = m;
   fsDay = d;
-
   render();
 }
 
-// ---------- Gregorian → FS ----------
+// ---------- Gregorian → FS input ----------
 function convertGregorian() {
-  const val = document.getElementById("gregorianInput").value;
-  if (!val) return;
+  const input = document.getElementById("gregorianInput").value;
+  if (!input) return;
 
-  const date = new Date(val);
+  const date = new Date(input);
   const fs = gregorianToFS(date);
 
   fsYear = fs.year;
   fsMonth = fs.month;
   fsDay = fs.day;
-
   render();
 }
 
-// ---------- Today ----------
-function goToToday() {
-  const today = new Date();
-  const fs = gregorianToFS(today);
-
-  fsYear = fs.year;
-  fsMonth = fs.month;
-  fsDay = fs.day;
-
-  render();
+// ---------- Live Clock ----------
+function startClock() {
+  const clock = document.getElementById("clock");
+  setInterval(() => {
+    const now = new Date();
+    clock.textContent = now.toLocaleTimeString();
+  }, 1000);
 }
 
 // ---------- Init ----------
 goToToday();
+startClock();
