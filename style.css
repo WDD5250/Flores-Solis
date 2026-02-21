@@ -34,3 +34,20 @@ body {
 .today {
   background: #ffd966;
 }
+.date-controls {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.date-controls input,
+.date-controls select {
+  padding: 4px;
+  width: 100%;
+}
+
+#gregorian-output {
+  margin: 8px 0;
+  font-size: 0.9em;
+  color: #555;
+}
