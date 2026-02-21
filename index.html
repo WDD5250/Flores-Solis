@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flores Solis Calendar</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="calendar">
+    <h1 id="title"></h1>
+    <div class="controls">
+      <button onclick="changeMonth(-1)">◀ Prev</button>
+      <button onclick="goToToday()">Today</button>
+      <button onclick="changeMonth(1)">Next ▶</button>
+    </div>
+
+    <div class="grid" id="calendar-grid"></div>
+  </div>
+
+  <script src="flores-solis.js"></script>
+</body>
+</html>
