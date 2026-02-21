@@ -7,16 +7,39 @@
 </head>
 <body>
 
-  <div class="calendar">
-    <h1 id="title"></h1>
-    <div class="controls">
-      <button onclick="changeMonth(-1)">◀ Prev</button>
-      <button onclick="goToToday()">Today</button>
-      <button onclick="changeMonth(1)">Next ▶</button>
-    </div>
+<div class="calendar">
+  <h1 id="title"></h1>
 
-    <div class="grid" id="calendar-grid"></div>
+  <!-- Flores Solis date controls -->
+  <div class="date-controls">
+    <select id="monthSelect"></select>
+
+    <input type="number" id="dayInput" min="1" />
+
+    <input type="number" id="yearInput" />
+
+    <button onclick="goToFSDate()">Go</button>
   </div>
+
+  <!-- Gregorian output -->
+  <div id="gregorian-output"></div>
+
+  <!-- Gregorian → FS converter -->
+  <div class="date-controls">
+    <input type="date" id="gregorianInput" />
+    <button onclick="convertGregorian()">Convert</button>
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="grid" id="calendar-grid"></div>
+
+  <!-- Navigation -->
+  <div class="controls">
+    <button onclick="changeMonth(-1)">◀ Prev</button>
+    <button onclick="goToToday()">Today</button>
+    <button onclick="changeMonth(1)">Next ▶</button>
+  </div>
+</div>
 
   <script src="flores-solis.js"></script>
 </body>
