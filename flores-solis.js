@@ -10,8 +10,7 @@ function isGregorianLeapYear(year) {
 }
 
 function violaDays(fsYear) {
-  const gregorianFebYear = fsYear + 1;
-  return isGregorianLeapYear(gregorianFebYear) ? 30 : 29;
+  return isGregorianLeapYear(fsYear + 1) ? 30 : 29;
 }
 
 // ---------- FS months ----------
@@ -43,6 +42,7 @@ function makeDate(year, month, day) {
 // ---------- State ----------
 let fsYear, fsMonth, fsDay;
 let utcOffset = 0;
+let followNow = true; // IMPORTANT FIX
 
 // ---------- Gregorian → FS ----------
 function gregorianToFS(date) {
@@ -77,42 +77,24 @@ function fsToGregorian(fsYear, fsMonth, fsDay) {
   return new Date(fsStart.getTime() + offset * MS_PER_DAY);
 }
 
-// ---------- Populate month select ----------
-function populateMonthSelect(fsYear) {
-  const select = document.getElementById("monthSelect");
-  select.innerHTML = "";
-  getFSMonths(fsYear).forEach((m, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = m.name;
-    select.appendChild(opt);
-  });
-}
-
-// ---------- Lunar phase ----------
+// ---------- Moon phase ----------
 function getMoonPhase(date) {
-  const lp = 29.530588853; // lunar period in days
-  const newMoon = new Date(2000,0,6,18,14); // reference new moon
-  const diff = (date - newMoon)/MS_PER_DAY;
+  const lp = 29.530588853;
+  const newMoon = new Date(2000, 0, 6, 18, 14);
+  const diff = (date - newMoon) / MS_PER_DAY;
   const phase = (diff % lp + lp) % lp;
-  if(phase < 1.84566) return "New Moon";
-  else if(phase < 5.53699) return "Waxing Crescent";
-  else if(phase < 9.22831) return "First Quarter";
-  else if(phase < 12.91963) return "Waxing Gibbous";
-  else if(phase < 16.61096) return "Full Moon";
-  else if(phase < 20.30228) return "Waning Gibbous";
-  else if(phase < 23.99361) return "Last Quarter";
-  else if(phase < 27.68493) return "Waning Crescent";
-  else return "New Moon";
+
+  if (phase < 1.84566) return ["🌑", "New Moon"];
+  if (phase < 5.53699) return ["🌒", "Waxing Crescent"];
+  if (phase < 9.22831) return ["🌓", "First Quarter"];
+  if (phase < 12.91963) return ["🌔", "Waxing Gibbous"];
+  if (phase < 16.61096) return ["🌕", "Full Moon"];
+  if (phase < 20.30228) return ["🌖", "Waning Gibbous"];
+  if (phase < 23.99361) return ["🌗", "Last Quarter"];
+  return ["🌘", "Waning Crescent"];
 }
 
 // ---------- Render ----------
-function updateLunarPhase() {
-  const g = fsToGregorian(fsYear, fsMonth, fsDay);
-  const phase = getMoonPhase(g);
-  document.getElementById("lunar-phase").textContent = "Lunar Phase: " + phase;
-}
-
 function render() {
   const grid = document.getElementById("calendar-grid");
   grid.innerHTML = "";
@@ -121,10 +103,9 @@ function render() {
   const era = fsYear < 0 ? "AEV" : "PEV";
   const displayYear = Math.abs(fsYear);
 
-  // Display month/year as title inside calendar
-  document.getElementById("month-title").textContent = `${months[fsMonth].name} ${displayYear} ${era}`;
+  document.getElementById("month-title").textContent =
+    `${months[fsMonth].name} ${displayYear} ${era}`;
 
-  populateMonthSelect(fsYear);
   document.getElementById("monthSelect").value = fsMonth;
   document.getElementById("dayInput").value = fsDay;
   document.getElementById("yearInput").value = fsYear;
@@ -141,49 +122,28 @@ function render() {
   document.getElementById("gregorian-output").textContent =
     `Gregorian: ${g.toDateString()}`;
 
-  updateLunarPhase();
-}
-
-// ---------- Navigation ----------
-function changeMonth(delta) {
-  fsMonth += delta;
-  if (fsMonth < 0) { fsMonth = 11; fsYear--; }
-  if (fsMonth > 11) { fsMonth = 0; fsYear++; }
-  fsDay = 1;
-  render();
-}
-
-function goToToday() {
-  const now = new Date();
-  const fs = gregorianToFS(now);
-  fsYear = fs.year; fsMonth = fs.month; fsDay = fs.day;
-  render();
+  const [emoji, name] = getMoonPhase(g);
+  document.getElementById("lunar-phase").textContent =
+    `Lunar Phase: ${emoji} ${name}`;
 }
 
 // ---------- Manual FS input ----------
 function goToFSDate() {
-  const m = parseInt(document.getElementById("monthSelect").value);
-  const d = parseInt(document.getElementById("dayInput").value);
-  const y = parseInt(document.getElementById("yearInput").value);
-
-  const months = getFSMonths(y);
-  if (d < 1 || d > months[m].days) {
-    alert("Invalid day for selected month");
-    return;
-  }
-
-  fsYear = y; fsMonth = m; fsDay = d;
+  followNow = false;
+  fsMonth = parseInt(monthSelect.value);
+  fsDay = parseInt(dayInput.value);
+  fsYear = parseInt(yearInput.value);
   render();
 }
 
-// ---------- Gregorian → FS input ----------
+// ---------- Gregorian → FS ----------
 function convertGregorian() {
-  const input = document.getElementById("gregorianInput").value;
-  if (!input) return;
-
-  const date = new Date(input);
+  followNow = false;
+  const date = new Date(gregorianInput.value);
   const fs = gregorianToFS(date);
-  fsYear = fs.year; fsMonth = fs.month; fsDay = fs.day;
+  fsYear = fs.year;
+  fsMonth = fs.month;
+  fsDay = fs.day;
   render();
 }
 
@@ -193,27 +153,28 @@ function startClock() {
     const now = new Date();
     const utc = now.getTime() + now.getTimezoneOffset() * 60000;
     const adjusted = new Date(utc + utcOffset * 3600000);
-    document.getElementById("clock").textContent = adjusted.toLocaleTimeString();
+    clock.textContent = adjusted.toLocaleTimeString();
 
-    // Update FS date if day changes
-    const fs = gregorianToFS(adjusted);
-    if (fsYear !== fs.year || fsMonth !== fs.month || fsDay !== fs.day) {
-      fsYear = fs.year; fsMonth = fs.month; fsDay = fs.day;
+    if (followNow) {
+      const fs = gregorianToFS(adjusted);
+      fsYear = fs.year;
+      fsMonth = fs.month;
+      fsDay = fs.day;
       render();
     }
   }, 1000);
 }
 
-document.getElementById("utcOffset").addEventListener("change", (e) => {
+utcOffset.addEventListener("change", e => {
   utcOffset = parseFloat(e.target.value);
 });
 
-// ---------- About toggle ----------
-function toggleAbout() {
-  const sec = document.getElementById("about-section");
-  sec.style.display = sec.style.display === "none" ? "block" : "none";
-}
-
-// ---------- Initialize ----------
-goToToday();
-startClock();
+// ---------- Init ----------
+(() => {
+  const fs = gregorianToFS(new Date());
+  fsYear = fs.year;
+  fsMonth = fs.month;
+  fsDay = fs.day;
+  render();
+  startClock();
+})();
