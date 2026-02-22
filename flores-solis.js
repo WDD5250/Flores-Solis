@@ -1,180 +1,129 @@
-// ===============================
-// FLORES SOLIS CALENDAR ENGINE
-// ===============================
+const MS = 86400000;
+let fsYear, fsMonth, fsDay;
+let utcOffset = 0;
+let followNow = true;
 
-const MS_PER_DAY = 86400000;
+// Leap rule
+const isLeap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+const violaDays = y => isLeap(y + 1) ? 30 : 29;
 
-// ---------- Leap year logic ----------
-function isGregorianLeapYear(year) {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-function violaDays(fsYear) {
-  return isGregorianLeapYear(fsYear + 1) ? 30 : 29;
-}
-
-// ---------- FS months ----------
-function getFSMonths(fsYear) {
+// Months
+function months(y) {
   return [
-    { name: "Narcissus", days: 31 },
-    { name: "Serrulata", days: 30 },
-    { name: "Convallaria", days: 31 },
-    { name: "Rosa", days: 31 },
-    { name: "Helianthus", days: 32 },
-    { name: "Gladiolus", days: 31 },
-    { name: "Aster", days: 30 },
-    { name: "Tagetes", days: 30 },
-    { name: "Chrysanthemum", days: 30 },
-    { name: "Pulcherrima", days: 29 },
-    { name: "Galanthus", days: 30 },
-    { name: "Viola", days: violaDays(fsYear) }
+    ["Narcissus",31],["Serrulata",30],["Convallaria",31],
+    ["Rosa",31],["Helianthus",32],["Gladiolus",31],
+    ["Aster",30],["Tagetes",30],["Chrysanthemum",30],
+    ["Pulcherrima",29],["Galanthus",30],["Viola",violaDays(y)]
   ];
 }
 
-// ---------- Safe date creation ----------
-function makeDate(year, month, day) {
-  const d = new Date(0);
-  d.setFullYear(year, month, day);
-  d.setHours(0, 0, 0, 0);
-  return d;
+// Safe date
+function mkDate(y,m,d){
+  const t=new Date(0);
+  t.setFullYear(y,m,d);
+  t.setHours(0,0,0,0);
+  return t;
 }
 
-// ---------- State ----------
-let fsYear, fsMonth, fsDay;
-let utcOffset = 0;
-let followNow = true; // IMPORTANT FIX
+// Conversions
+function g2fs(date){
+  const y=date.getFullYear();
+  const start=mkDate(y,2,20);
+  const fy=date>=start?y:y-1;
+  let off=Math.floor((date-mkDate(fy,2,20))/MS);
+  let m=0, d=off+1, ms=months(fy);
+  while(d>ms[m][1]){ d-=ms[m][1]; m++; }
+  return {y:fy,m,d};
+}
 
-// ---------- Gregorian → FS ----------
-function gregorianToFS(date) {
-  const gYear = date.getFullYear();
-  const fsStartThisYear = makeDate(gYear, 2, 20);
+function fs2g(y,m,d){
+  let off=d-1, ms=months(y);
+  for(let i=0;i<m;i++) off+=ms[i][1];
+  return new Date(mkDate(y,2,20).getTime()+off*MS);
+}
 
-  const fsYear = date >= fsStartThisYear ? gYear : gYear - 1;
-  const fsStart = makeDate(fsYear, 2, 20);
+// Moon phase
+function moon(date){
+  const p=29.530588853;
+  const n=new Date(2000,0,6,18,14);
+  const a=((date-n)/MS%p+p)%p;
+  return a<1.8?["🌑","New Moon"]:
+         a<5.5?["🌒","Waxing Crescent"]:
+         a<9.2?["🌓","First Quarter"]:
+         a<12.9?["🌔","Waxing Gibbous"]:
+         a<16.6?["🌕","Full Moon"]:
+         a<20.3?["🌖","Waning Gibbous"]:
+         a<24.0?["🌗","Last Quarter"]:
+                 ["🌘","Waning Crescent"];
+}
 
-  let offset = Math.floor((date - fsStart) / MS_PER_DAY);
-  const months = getFSMonths(fsYear);
+// Render
+function render(){
+  const ms=months(fsYear);
+  monthSelect.innerHTML="";
+  ms.forEach((m,i)=>monthSelect.add(new Option(m[0],i)));
 
-  let month = 0;
-  let day = offset + 1;
+  monthSelect.value=fsMonth;
+  dayInput.value=fsDay;
+  yearInput.value=fsYear;
 
-  while (day > months[month].days) {
-    day -= months[month].days;
-    month++;
+  calendarGrid.innerHTML="";
+  for(let i=1;i<=ms[fsMonth][1];i++){
+    const c=document.createElement("div");
+    c.className="day"+(i===fsDay?" today":"");
+    c.textContent=i;
+    calendarGrid.appendChild(c);
   }
 
-  return { year: fsYear, month, day };
+  const era=fsYear<0?"AEV":"PEV";
+  monthTitle.textContent=`${ms[fsMonth][0]} ${Math.abs(fsYear)} ${era}`;
+
+  const g=fs2g(fsYear,fsMonth,fsDay);
+  gregorianOutput.textContent=`Gregorian: ${g.toDateString()}`;
+  const [e,n]=moon(g);
+  lunarPhase.textContent=`Lunar Phase: ${e} ${n}`;
 }
 
-// ---------- FS → Gregorian ----------
-function fsToGregorian(fsYear, fsMonth, fsDay) {
-  const fsStart = makeDate(fsYear, 2, 20);
-  const months = getFSMonths(fsYear);
-
-  let offset = fsDay - 1;
-  for (let i = 0; i < fsMonth; i++) offset += months[i].days;
-
-  return new Date(fsStart.getTime() + offset * MS_PER_DAY);
-}
-
-// ---------- Moon phase ----------
-function getMoonPhase(date) {
-  const lp = 29.530588853;
-  const newMoon = new Date(2000, 0, 6, 18, 14);
-  const diff = (date - newMoon) / MS_PER_DAY;
-  const phase = (diff % lp + lp) % lp;
-
-  if (phase < 1.84566) return ["🌑", "New Moon"];
-  if (phase < 5.53699) return ["🌒", "Waxing Crescent"];
-  if (phase < 9.22831) return ["🌓", "First Quarter"];
-  if (phase < 12.91963) return ["🌔", "Waxing Gibbous"];
-  if (phase < 16.61096) return ["🌕", "Full Moon"];
-  if (phase < 20.30228) return ["🌖", "Waning Gibbous"];
-  if (phase < 23.99361) return ["🌗", "Last Quarter"];
-  return ["🌘", "Waning Crescent"];
-}
-
-// ---------- Render ----------
-function render() {
-  const grid = document.getElementById("calendar-grid");
-  grid.innerHTML = "";
-
-  const months = getFSMonths(fsYear);
-  const era = fsYear < 0 ? "AEV" : "PEV";
-  const displayYear = Math.abs(fsYear);
-
-  document.getElementById("month-title").textContent =
-    `${months[fsMonth].name} ${displayYear} ${era}`;
-
-  document.getElementById("monthSelect").value = fsMonth;
-  document.getElementById("dayInput").value = fsDay;
-  document.getElementById("yearInput").value = fsYear;
-
-  for (let i = 1; i <= months[fsMonth].days; i++) {
-    const cell = document.createElement("div");
-    cell.className = "day";
-    if (i === fsDay) cell.classList.add("today");
-    cell.textContent = i;
-    grid.appendChild(cell);
-  }
-
-  const g = fsToGregorian(fsYear, fsMonth, fsDay);
-  document.getElementById("gregorian-output").textContent =
-    `Gregorian: ${g.toDateString()}`;
-
-  const [emoji, name] = getMoonPhase(g);
-  document.getElementById("lunar-phase").textContent =
-    `Lunar Phase: ${emoji} ${name}`;
-}
-
-// ---------- Manual FS input ----------
-function goToFSDate() {
-  followNow = false;
-  fsMonth = parseInt(monthSelect.value);
-  fsDay = parseInt(dayInput.value);
-  fsYear = parseInt(yearInput.value);
+// Controls
+function goToFSDate(){
+  followNow=false;
+  fsMonth=+monthSelect.value;
+  fsDay=+dayInput.value;
+  fsYear=+yearInput.value;
   render();
 }
 
-// ---------- Gregorian → FS ----------
-function convertGregorian() {
-  followNow = false;
-  const date = new Date(gregorianInput.value);
-  const fs = gregorianToFS(date);
-  fsYear = fs.year;
-  fsMonth = fs.month;
-  fsDay = fs.day;
+function convertGregorian(){
+  followNow=false;
+  const fs=g2fs(new Date(gregorianInput.value));
+  fsYear=fs.y; fsMonth=fs.m; fsDay=fs.d;
   render();
 }
 
-// ---------- Clock ----------
-function startClock() {
-  setInterval(() => {
-    const now = new Date();
-    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-    const adjusted = new Date(utc + utcOffset * 3600000);
-    clock.textContent = adjusted.toLocaleTimeString();
+// Clock
+setInterval(()=>{
+  const now=new Date();
+  const utc=now.getTime()+now.getTimezoneOffset()*60000;
+  const t=new Date(utc+utcOffset*3600000);
+  clock.textContent=t.toLocaleTimeString();
+  if(followNow){
+    const fs=g2fs(t);
+    fsYear=fs.y; fsMonth=fs.m; fsDay=fs.d;
+    render();
+  }
+},1000);
 
-    if (followNow) {
-      const fs = gregorianToFS(adjusted);
-      fsYear = fs.year;
-      fsMonth = fs.month;
-      fsDay = fs.day;
-      render();
-    }
-  }, 1000);
+utcOffset.addEventListener("change",e=>utcOffset=+e.target.value);
+
+// About
+function toggleAbout(){
+  aboutSection.style.display =
+    aboutSection.style.display==="block"?"none":"block";
 }
 
-utcOffset.addEventListener("change", e => {
-  utcOffset = parseFloat(e.target.value);
-});
-
-// ---------- Init ----------
+// Init
 (() => {
-  const fs = gregorianToFS(new Date());
-  fsYear = fs.year;
-  fsMonth = fs.month;
-  fsDay = fs.day;
+  const fs=g2fs(new Date());
+  fsYear=fs.y; fsMonth=fs.m; fsDay=fs.d;
   render();
-  startClock();
 })();
