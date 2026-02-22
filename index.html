@@ -4,10 +4,24 @@
 <meta charset="UTF-8">
 <title>Flores Solis Calendar</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+  h1 { text-align: center; margin-bottom: 10px; }
+  #clock-container { text-align: center; margin-bottom: 10px; }
+  .date-controls { display: flex; gap: 6px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
+  .date-controls input, .date-controls select { padding: 4px; width: 80px; }
+  #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; }
+  .day { padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
+  .today { background-color: #ffd700; }
+  #lunar-phase { text-align: center; margin-bottom: 10px; font-weight: bold; }
+  #month-title { text-align: center; font-weight: bold; margin-bottom: 6px; font-size: 1.1em; }
+  #about-section { border: 1px solid #aaa; padding: 10px; margin-top: 10px; border-radius: 6px; background: #f9f9f9; }
+</style>
 </head>
 <body>
+
   <!-- Top Header -->
-  <h1 id="calendar-title">Flores Solis Calendar</h1>
+  <h1>Flores Solis Calendar</h1>
 
   <div id="clock-container">
     <span id="clock"></span>
@@ -25,6 +39,9 @@
   <!-- Gregorian display -->
   <div id="gregorian-output"></div>
 
+  <!-- Calendar month title -->
+  <div id="month-title"></div>
+
   <!-- Calendar Grid -->
   <div class="grid" id="calendar-grid"></div>
 
@@ -41,8 +58,18 @@
   <button onclick="toggleAbout()">About Flores Solis</button>
   <div id="about-section" style="display:none;">
     <p>
-      Flores Solis is a solar-lunisolar calendar aligned to the equinoxes and solstices...
-      <!-- Add more info here -->
+      Flores Solis is a solar-lunisolar calendar aligned to the equinoxes and solstices. 
+      Each month is named after a flower and starts at a specific seasonal marker:
+      Narcissus starts at the spring equinox, Rosa at the summer solstice, 
+      Aster at the autumn equinox, and Pulcherrima at the winter solstice.
+    </p>
+    <p>
+      Leap days are assigned to Viola according to whether the following Gregorian year has February 29,
+      ensuring alignment with the solar year. This makes the calendar highly consistent with seasons.
+    </p>
+    <p>
+      Compared to the Gregorian calendar, Flores Solis has months that consistently reflect natural seasons,
+      a clear astronomical anchor, and full support for historical (AEV) and future (PEV) dates.
     </p>
   </div>
 
