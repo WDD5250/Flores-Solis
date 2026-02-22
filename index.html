@@ -1,45 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Flores Solis Calendar</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<title>Flores Solis Calendar</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Top Header -->
+  <h1 id="calendar-title">Flores Solis Calendar</h1>
 
-<div class="calendar">
-  <h1 id="title"></h1>
+  <div id="clock-container">
+    <span id="clock"></span>
+    UTC: <input type="number" id="utcOffset" step="0.5" value="0">
+  </div>
 
-  <!-- Flores Solis date controls -->
+  <!-- FS Date Controls -->
   <div class="date-controls">
     <select id="monthSelect"></select>
-
-    <input type="number" id="dayInput" min="1" />
-
-    <input type="number" id="yearInput" />
-
+    <input type="number" id="dayInput" min="1">
+    <input type="number" id="yearInput">
     <button onclick="goToFSDate()">Go</button>
   </div>
 
-  <!-- Gregorian output -->
+  <!-- Gregorian display -->
   <div id="gregorian-output"></div>
 
-  <!-- Gregorian → FS converter -->
+  <!-- Calendar Grid -->
+  <div class="grid" id="calendar-grid"></div>
+
+  <!-- Lunar Phase -->
+  <div id="lunar-phase"></div>
+
+  <!-- Gregorian → FS Conversion -->
   <div class="date-controls">
-    <input type="date" id="gregorianInput" />
+    <input type="date" id="gregorianInput">
     <button onclick="convertGregorian()">Convert</button>
   </div>
 
-  <!-- Calendar grid -->
-  <div class="grid" id="calendar-grid"></div>
-
-  <!-- Navigation -->
-  <div class="controls">
-    <button onclick="changeMonth(-1)">◀ Prev</button>
-    <button onclick="goToToday()">Today</button>
-    <button onclick="changeMonth(1)">Next ▶</button>
+  <!-- About Section -->
+  <button onclick="toggleAbout()">About Flores Solis</button>
+  <div id="about-section" style="display:none;">
+    <p>
+      Flores Solis is a solar-lunisolar calendar aligned to the equinoxes and solstices...
+      <!-- Add more info here -->
+    </p>
   </div>
-</div>
 
   <script src="flores-solis.js"></script>
 </body>
