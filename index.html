@@ -5,15 +5,32 @@
 <title>Flores Solis Calendar</title>
 
 <style>
+:root {
+  --bg: #0e0e0e;
+  --panel: #1a1a1a;
+  --text: #eaeaea;
+  --accent: #ffd400;
+  --border: #333;
+}
+
+body.light {
+  --bg: #f2f2f2;
+  --panel: #ffffff;
+  --text: #111;
+  --accent: #ffd400;
+  --border: #ccc;
+}
+
 body {
   margin: 0;
   padding: 20px;
   font-family: system-ui, sans-serif;
-  background: #f2f2f2;
+  background: var(--bg);
+  color: var(--text);
 }
 
 #app {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: auto;
 }
 
@@ -21,52 +38,76 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
 
 #clock {
   font-size: 1.1em;
-  font-weight: 500;
 }
 
 #main {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 320px 1fr;
   gap: 20px;
+  margin-top: 15px;
+}
+
+.controls,
+#calendar {
+  background: var(--panel);
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(0,0,0,.4);
 }
 
 .controls {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 0 6px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.controls label {
-  font-size: 0.85em;
-  opacity: 0.7;
+.controls hr {
+  border: none;
+  border-top: 1px solid var(--border);
 }
 
-.controls input,
-.controls select,
-.controls button {
+input, select, button {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
   padding: 6px;
-  font-size: 14px;
+  border-radius: 6px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
 }
 
 #calendar {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 0 6px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 #month-title {
+  font-size: 1.4em;
   text-align: center;
-  font-size: 1.3em;
+}
+
+#leap-info {
+  text-align: center;
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+#nav-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
@@ -74,33 +115,37 @@ header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
+  flex-grow: 1;
 }
 
 .day {
-  padding: 8px;
+  border: 1px solid var(--border);
+  padding: 10px;
   text-align: center;
   border-radius: 6px;
-  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.day:hover {
+  border-color: var(--accent);
 }
 
 .today {
-  background: gold;
+  background: var(--accent);
+  color: #000;
   font-weight: bold;
 }
 
-#gregorian-output,
-#lunar-phase {
+#info {
   margin-top: 10px;
   text-align: center;
-  font-weight: 500;
 }
 
-#about-section {
+#about,
+#settings {
   display: none;
-  margin-top: 20px;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
+  margin-top: 10px;
+  font-size: 0.9em;
 }
 </style>
 </head>
@@ -110,7 +155,7 @@ header {
 
 <header>
   <h1>Flores Solis Calendar</h1>
-  <div id="clock">--:--:--</div>
+  <div id="clock"></div>
 </header>
 
 <div id="main">
@@ -119,7 +164,7 @@ header {
 
     <label>Flores Solis Date</label>
     <select id="monthSelect"></select>
-    <input id="dayInput" type="number" min="1">
+    <input id="dayInput" type="number">
     <input id="yearInput" type="number">
     <button onclick="goToFSDate()">Go</button>
     <button onclick="setToNow()">Set to Current Date</button>
@@ -134,35 +179,58 @@ header {
 
     <label>UTC Offset</label>
     <select id="utcSelect"></select>
-
     <label><input type="checkbox" id="sec30"> +30 seconds</label>
     <label><input type="checkbox" id="sec45"> +45 seconds</label>
-    <label>Custom seconds offset
-      <input id="customSeconds" type="number" value="0">
-    </label>
+    <input id="customSeconds" type="number" placeholder="Custom seconds">
     <label><input type="checkbox" id="dst"> Daylight Savings</label>
-
     <button onclick="applyUTC()">Apply UTC Offset</button>
 
     <hr>
 
     <button onclick="toggleAbout()">About Flores Solis</button>
+    <button onclick="toggleSettings()">Settings</button>
+
+    <div id="about">
+      Flores Solis is a solar calendar anchored to equinoxes and solstices,
+      preserving seasonal alignment over millennia.
+    </div>
+
+    <div id="settings">
+      <label>
+        <input type="checkbox" id="darkToggle" checked onchange="toggleDark()">
+        Dark Mode
+      </label>
+
+      <label>
+        Calendar View
+        <select id="viewMode" onchange="render()">
+          <option value="year">Yearly</option>
+          <option value="month">Monthly</option>
+        </select>
+      </label>
+    </div>
+
   </div>
 
   <div id="calendar">
     <div id="month-title"></div>
+    <div id="leap-info"></div>
+
+    <div id="nav-buttons">
+      <button onclick="shiftDay(-1)">◀ Day</button>
+      <button onclick="shiftMonth(-1)">◀ Month</button>
+      <button onclick="shiftMonth(1)">Month ▶</button>
+      <button onclick="shiftDay(1)">Day ▶</button>
+    </div>
+
     <div id="calendar-grid"></div>
-    <div id="gregorian-output"></div>
-    <div id="lunar-phase"></div>
+
+    <div id="info">
+      <div id="gregorian-output"></div>
+      <div id="lunar-phase"></div>
+    </div>
   </div>
 
-</div>
-
-<div id="about-section">
-  <p>
-    Flores Solis is a solar calendar aligned to equinoxes and solstices.
-    The year begins at the March equinox, keeping seasons stable over millennia.
-  </p>
 </div>
 
 <script src="flores-solis.js"></script>
