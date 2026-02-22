@@ -17,7 +17,6 @@ body {
   margin: auto;
 }
 
-/* ===== Header ===== */
 header {
   display: flex;
   justify-content: space-between;
@@ -25,27 +24,17 @@ header {
   margin-bottom: 20px;
 }
 
-header h1 {
-  margin: 0;
-}
-
-#clock-box {
-  text-align: right;
-}
-
 #clock {
   font-size: 1.1em;
   font-weight: 500;
 }
 
-/* ===== Main Layout ===== */
 #main {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 300px 1fr;
   gap: 20px;
 }
 
-/* ===== Controls ===== */
 .controls {
   background: white;
   padding: 15px;
@@ -68,7 +57,6 @@ header h1 {
   font-size: 14px;
 }
 
-/* ===== Calendar ===== */
 #calendar {
   background: white;
   padding: 15px;
@@ -93,7 +81,6 @@ header h1 {
   text-align: center;
   border-radius: 6px;
   border: 1px solid #ddd;
-  user-select: none;
 }
 
 .today {
@@ -101,7 +88,6 @@ header h1 {
   font-weight: bold;
 }
 
-/* ===== Info ===== */
 #gregorian-output,
 #lunar-phase {
   margin-top: 10px;
@@ -109,14 +95,12 @@ header h1 {
   font-weight: 500;
 }
 
-/* ===== About ===== */
 #about-section {
   display: none;
   margin-top: 20px;
   background: white;
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 0 6px rgba(0,0,0,0.1);
 }
 </style>
 </head>
@@ -126,27 +110,19 @@ header h1 {
 
 <header>
   <h1>Flores Solis Calendar</h1>
-  <div id="clock-box">
-    <div id="clock">--:--:--</div>
-    UTC
-    <input id="utcOffset" type="number" step="0.5" value="0">
-  </div>
+  <div id="clock">--:--:--</div>
 </header>
 
 <div id="main">
 
-  <!-- ===== Controls ===== -->
   <div class="controls">
-    <label>Month</label>
+
+    <label>Flores Solis Date</label>
     <select id="monthSelect"></select>
-
-    <label>Day</label>
     <input id="dayInput" type="number" min="1">
-
-    <label>Year</label>
     <input id="yearInput" type="number">
-
     <button onclick="goToFSDate()">Go</button>
+    <button onclick="setToNow()">Set to Current Date</button>
 
     <hr>
 
@@ -156,10 +132,23 @@ header h1 {
 
     <hr>
 
+    <label>UTC Offset</label>
+    <select id="utcSelect"></select>
+
+    <label><input type="checkbox" id="sec30"> +30 seconds</label>
+    <label><input type="checkbox" id="sec45"> +45 seconds</label>
+    <label>Custom seconds offset
+      <input id="customSeconds" type="number" value="0">
+    </label>
+    <label><input type="checkbox" id="dst"> Daylight Savings</label>
+
+    <button onclick="applyUTC()">Apply UTC Offset</button>
+
+    <hr>
+
     <button onclick="toggleAbout()">About Flores Solis</button>
   </div>
 
-  <!-- ===== Calendar ===== -->
   <div id="calendar">
     <div id="month-title"></div>
     <div id="calendar-grid"></div>
@@ -169,12 +158,10 @@ header h1 {
 
 </div>
 
-<!-- ===== About Section ===== -->
 <div id="about-section">
   <p>
-    <strong>Flores Solis</strong> is a solar calendar aligned to the equinoxes
-    and solstices. The year begins at the March equinox, ensuring seasonal
-    stability and removing Gregorian drift.
+    Flores Solis is a solar calendar aligned to equinoxes and solstices.
+    The year begins at the March equinox, keeping seasons stable over millennia.
   </p>
 </div>
 
