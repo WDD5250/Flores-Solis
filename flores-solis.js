@@ -10,15 +10,15 @@ const gregorianOutput = document.getElementById("gregorian-output");
 const lunarPhase = document.getElementById("lunar-phase");
 const clockEl = document.getElementById("clock");
 const utcSelect = document.getElementById("utcSelect");
-const plus30 = document.getElementById("plus30");
-const plus45 = document.getElementById("plus45");
+const sec30 = document.getElementById("sec30");
+const sec45 = document.getElementById("sec45");
+const customSeconds = document.getElementById("customSeconds");
 const dst = document.getElementById("dst");
 const aboutSection = document.getElementById("about-section");
 
 /* ===== State ===== */
 let fsYear, fsMonth, fsDay;
-let liveMode = true;
-let utcOffset = 0;
+let utcMsOffset = 0;
 
 /* ===== Leap ===== */
 const isLeap = y =>
@@ -43,7 +43,7 @@ function mkDate(y,m,d){
   return t;
 }
 
-/* ===== Conversions ===== */
+/* ===== Conversion ===== */
 function gregorianToFS(date){
   const y=date.getFullYear();
   const start=mkDate(y,2,20);
@@ -102,7 +102,6 @@ function render(){
 
 /* ===== Controls ===== */
 function goToFSDate(){
-  liveMode=false;
   fsMonth=+monthSelect.value;
   fsDay=+dayInput.value;
   fsYear=+yearInput.value;
@@ -110,55 +109,61 @@ function goToFSDate(){
 }
 
 function setToNow(){
-  liveMode=true;
+  const now = getDisplayTime();
+  const fs = gregorianToFS(now);
+  fsYear = fs.y;
+  fsMonth = fs.m;
+  fsDay = fs.d;
+  render();
 }
 
 function convertGregorian(){
-  liveMode=false;
   const fs=gregorianToFS(new Date(gregorianInput.value));
   fsYear=fs.y; fsMonth=fs.m; fsDay=fs.d;
   render();
 }
 
 /* ===== UTC ===== */
-const offsets = [
+const baseOffsets = [
   "-12","-11","-10","-9","-8","-7","-6","-5","-4","-3","-2","-1",
-  "+0","+1","+2","+3","+4","+5","+6","+7.5","+8","+9","+10","+11","+12","+13","+14"
+  "+0","+1","+2","+3","+4","+5","+6","+7","+8","+9","+10","+11","+12","+13","+14"
 ];
 
-offsets.forEach(o=>{
-  utcSelect.add(new Option(`UTC${o.startsWith("-")?o:"+"+o}`, o));
+baseOffsets.forEach(o=>{
+  utcSelect.add(new Option(`UTC${o}`, o));
 });
 
 function applyUTC(){
-  utcOffset=parseFloat(utcSelect.value);
-  if(plus30.checked) utcOffset+=0.5;
-  if(plus45.checked) utcOffset+=0.75;
-  if(dst.checked) utcOffset+=1;
+  let hours = parseFloat(utcSelect.value);
+  let seconds = 0;
+  if(sec30.checked) seconds += 30;
+  if(sec45.checked) seconds += 45;
+  seconds += parseInt(customSeconds.value || 0);
+  if(dst.checked) hours += 1;
+
+  utcMsOffset = hours*3600000 + seconds*1000;
 }
 
 /* ===== Clock ===== */
+function getDisplayTime(){
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset()*60000;
+  return new Date(utc + utcMsOffset);
+}
+
 setInterval(()=>{
-  const now=new Date();
-  const utc=now.getTime()+now.getTimezoneOffset()*60000;
-  const local=new Date(utc+utcOffset*3600000);
-  clockEl.textContent=local.toLocaleTimeString();
-  if(liveMode){
-    const fs=gregorianToFS(local);
-    fsYear=fs.y; fsMonth=fs.m; fsDay=fs.d;
-    render();
-  }
+  clockEl.textContent = getDisplayTime().toLocaleTimeString();
 },1000);
 
 /* ===== About ===== */
 function toggleAbout(){
-  aboutSection.style.display=
+  aboutSection.style.display =
     aboutSection.style.display==="block"?"none":"block";
 }
 
 /* ===== Init ===== */
 (function(){
-  const fs=gregorianToFS(new Date());
+  const fs = gregorianToFS(new Date());
   fsYear=fs.y; fsMonth=fs.m; fsDay=fs.d;
   render();
 })();
