@@ -4,75 +4,138 @@
 <meta charset="UTF-8">
 <title>Flores Solis Calendar</title>
 <link rel="stylesheet" href="style.css">
+
 <style>
-  body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-  h1 { text-align: center; margin-bottom: 10px; }
-  #clock-container { text-align: center; margin-bottom: 10px; }
-  .date-controls { display: flex; gap: 6px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
-  .date-controls input, .date-controls select { padding: 4px; width: 80px; }
-  #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; }
-  .day { padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
-  .today { background-color: #ffd700; }
-  #lunar-phase { text-align: center; margin-bottom: 10px; font-weight: bold; }
-  #month-title { text-align: center; font-weight: bold; margin-bottom: 6px; font-size: 1.1em; }
-  #about-section { border: 1px solid #aaa; padding: 10px; margin-top: 10px; border-radius: 6px; background: #f9f9f9; }
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #fafafa;
+}
+
+#app {
+  max-width: 900px;
+  margin: auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#clock-box {
+  text-align: right;
+}
+
+#main {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.controls input,
+.controls select,
+.controls button {
+  padding: 6px;
+}
+
+#calendar {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.1);
+}
+
+#month-title {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+#calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.day {
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #ddd;
+}
+
+.today {
+  background: gold;
+}
+
+#lunar-phase {
+  margin-top: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+#about-section {
+  margin-top: 20px;
+  display: none;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+}
 </style>
 </head>
+
 <body>
+<div id="app">
 
-  <!-- Top Header -->
+<header>
   <h1>Flores Solis Calendar</h1>
-
-  <div id="clock-container">
-    <span id="clock"></span>
-    UTC: <input type="number" id="utcOffset" step="0.5" value="0">
+  <div id="clock-box">
+    <div id="clock"></div>
+    UTC <input id="utcOffset" type="number" step="0.5" value="0">
   </div>
+</header>
 
-  <!-- FS Date Controls -->
-  <div class="date-controls">
+<div id="main">
+  <div class="controls">
     <select id="monthSelect"></select>
-    <input type="number" id="dayInput" min="1">
-    <input type="number" id="yearInput">
+    <input id="dayInput" type="number" min="1">
+    <input id="yearInput" type="number">
     <button onclick="goToFSDate()">Go</button>
-  </div>
 
-  <!-- Gregorian display -->
-  <div id="gregorian-output"></div>
+    <hr>
 
-  <!-- Calendar month title -->
-  <div id="month-title"></div>
-
-  <!-- Calendar Grid -->
-  <div class="grid" id="calendar-grid"></div>
-
-  <!-- Lunar Phase -->
-  <div id="lunar-phase"></div>
-
-  <!-- Gregorian → FS Conversion -->
-  <div class="date-controls">
-    <input type="date" id="gregorianInput">
+    <input id="gregorianInput" type="date">
     <button onclick="convertGregorian()">Convert</button>
   </div>
 
-  <!-- About Section -->
-  <button onclick="toggleAbout()">About Flores Solis</button>
-  <div id="about-section" style="display:none;">
-    <p>
-      Flores Solis is a solar-lunisolar calendar aligned to the equinoxes and solstices. 
-      Each month is named after a flower and starts at a specific seasonal marker:
-      Narcissus starts at the spring equinox, Rosa at the summer solstice, 
-      Aster at the autumn equinox, and Pulcherrima at the winter solstice.
-    </p>
-    <p>
-      Leap days are assigned to Viola according to whether the following Gregorian year has February 29,
-      ensuring alignment with the solar year. This makes the calendar highly consistent with seasons.
-    </p>
-    <p>
-      Compared to the Gregorian calendar, Flores Solis has months that consistently reflect natural seasons,
-      a clear astronomical anchor, and full support for historical (AEV) and future (PEV) dates.
-    </p>
+  <div id="calendar">
+    <div id="month-title"></div>
+    <div id="calendar-grid"></div>
+    <div id="gregorian-output"></div>
+    <div id="lunar-phase"></div>
   </div>
+</div>
 
-  <script src="flores-solis.js"></script>
+<button onclick="toggleAbout()">About Flores Solis</button>
+<div id="about-section">
+  <p>
+    Flores Solis is a solar calendar aligned to the equinoxes and solstices.
+    Each year begins at the March equinox, and months reflect natural seasonal
+    structure rather than arbitrary lengths.
+  </p>
+</div>
+
+</div>
+
+<script src="flores-solis.js"></script>
 </body>
 </html>
