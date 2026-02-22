@@ -2,7 +2,6 @@
 // FLORES SOLIS CALENDAR ENGINE
 // ===============================
 
-// ---------- Constants ----------
 const MS_PER_DAY = 86400000;
 
 // ---------- Leap year logic ----------
@@ -10,13 +9,12 @@ function isGregorianLeapYear(year) {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
-// Viola leap day if Feb 29 occurs during Viola
 function violaDays(fsYear) {
   const gregorianFebYear = fsYear + 1;
   return isGregorianLeapYear(gregorianFebYear) ? 30 : 29;
 }
 
-// ---------- Flores Solis months ----------
+// ---------- FS months ----------
 function getFSMonths(fsYear) {
   return [
     { name: "Narcissus", days: 31 },
@@ -34,7 +32,7 @@ function getFSMonths(fsYear) {
   ];
 }
 
-// ---------- Safe date creation (FIXES YEAR 0–99 BUG) ----------
+// ---------- Safe date creation ----------
 function makeDate(year, month, day) {
   const d = new Date(0);
   d.setFullYear(year, month, day);
@@ -44,8 +42,9 @@ function makeDate(year, month, day) {
 
 // ---------- State ----------
 let fsYear, fsMonth, fsDay;
+let utcOffset = 0;
 
-// ---------- Gregorian → Flores Solis ----------
+// ---------- Gregorian → FS ----------
 function gregorianToFS(date) {
   const gYear = date.getFullYear();
   const fsStartThisYear = makeDate(gYear, 2, 20);
@@ -67,24 +66,21 @@ function gregorianToFS(date) {
   return { year: fsYear, month, day };
 }
 
-// ---------- Flores Solis → Gregorian ----------
+// ---------- FS → Gregorian ----------
 function fsToGregorian(fsYear, fsMonth, fsDay) {
   const fsStart = makeDate(fsYear, 2, 20);
   const months = getFSMonths(fsYear);
 
   let offset = fsDay - 1;
-  for (let i = 0; i < fsMonth; i++) {
-    offset += months[i].days;
-  }
+  for (let i = 0; i < fsMonth; i++) offset += months[i].days;
 
   return new Date(fsStart.getTime() + offset * MS_PER_DAY);
 }
 
-// ---------- Populate month selector ----------
+// ---------- Populate month select ----------
 function populateMonthSelect(fsYear) {
   const select = document.getElementById("monthSelect");
   select.innerHTML = "";
-
   getFSMonths(fsYear).forEach((m, i) => {
     const opt = document.createElement("option");
     opt.value = i;
@@ -93,7 +89,30 @@ function populateMonthSelect(fsYear) {
   });
 }
 
+// ---------- Lunar phase ----------
+function getMoonPhase(date) {
+  const lp = 29.530588853; // lunar period in days
+  const newMoon = new Date(2000,0,6,18,14); // reference new moon
+  const diff = (date - newMoon)/MS_PER_DAY;
+  const phase = (diff % lp + lp) % lp;
+  if(phase < 1.84566) return "New Moon";
+  else if(phase < 5.53699) return "Waxing Crescent";
+  else if(phase < 9.22831) return "First Quarter";
+  else if(phase < 12.91963) return "Waxing Gibbous";
+  else if(phase < 16.61096) return "Full Moon";
+  else if(phase < 20.30228) return "Waning Gibbous";
+  else if(phase < 23.99361) return "Last Quarter";
+  else if(phase < 27.68493) return "Waning Crescent";
+  else return "New Moon";
+}
+
 // ---------- Render ----------
+function updateLunarPhase() {
+  const g = fsToGregorian(fsYear, fsMonth, fsDay);
+  const phase = getMoonPhase(g);
+  document.getElementById("lunar-phase").textContent = "Lunar Phase: " + phase;
+}
+
 function render() {
   const grid = document.getElementById("calendar-grid");
   grid.innerHTML = "";
@@ -102,11 +121,10 @@ function render() {
   const era = fsYear < 0 ? "AEV" : "PEV";
   const displayYear = Math.abs(fsYear);
 
-  document.getElementById("title").textContent =
-    `Flores Solis Calendar — ${months[fsMonth].name} ${displayYear} ${era}`;
+  // Display month/year as title inside calendar
+  document.getElementById("month-title").textContent = `${months[fsMonth].name} ${displayYear} ${era}`;
 
   populateMonthSelect(fsYear);
-
   document.getElementById("monthSelect").value = fsMonth;
   document.getElementById("dayInput").value = fsDay;
   document.getElementById("yearInput").value = fsYear;
@@ -122,31 +140,23 @@ function render() {
   const g = fsToGregorian(fsYear, fsMonth, fsDay);
   document.getElementById("gregorian-output").textContent =
     `Gregorian: ${g.toDateString()}`;
+
+  updateLunarPhase();
 }
 
 // ---------- Navigation ----------
 function changeMonth(delta) {
   fsMonth += delta;
-
-  if (fsMonth < 0) {
-    fsMonth = 11;
-    fsYear--;
-  }
-  if (fsMonth > 11) {
-    fsMonth = 0;
-    fsYear++;
-  }
-
+  if (fsMonth < 0) { fsMonth = 11; fsYear--; }
+  if (fsMonth > 11) { fsMonth = 0; fsYear++; }
   fsDay = 1;
   render();
 }
 
 function goToToday() {
-  const today = new Date();
-  const fs = gregorianToFS(today);
-  fsYear = fs.year;
-  fsMonth = fs.month;
-  fsDay = fs.day;
+  const now = new Date();
+  const fs = gregorianToFS(now);
+  fsYear = fs.year; fsMonth = fs.month; fsDay = fs.day;
   render();
 }
 
@@ -162,9 +172,7 @@ function goToFSDate() {
     return;
   }
 
-  fsYear = y;
-  fsMonth = m;
-  fsDay = d;
+  fsYear = y; fsMonth = m; fsDay = d;
   render();
 }
 
@@ -175,22 +183,37 @@ function convertGregorian() {
 
   const date = new Date(input);
   const fs = gregorianToFS(date);
-
-  fsYear = fs.year;
-  fsMonth = fs.month;
-  fsDay = fs.day;
+  fsYear = fs.year; fsMonth = fs.month; fsDay = fs.day;
   render();
 }
 
-// ---------- Live Clock ----------
+// ---------- Clock ----------
 function startClock() {
-  const clock = document.getElementById("clock");
   setInterval(() => {
     const now = new Date();
-    clock.textContent = now.toLocaleTimeString();
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const adjusted = new Date(utc + utcOffset * 3600000);
+    document.getElementById("clock").textContent = adjusted.toLocaleTimeString();
+
+    // Update FS date if day changes
+    const fs = gregorianToFS(adjusted);
+    if (fsYear !== fs.year || fsMonth !== fs.month || fsDay !== fs.day) {
+      fsYear = fs.year; fsMonth = fs.month; fsDay = fs.day;
+      render();
+    }
   }, 1000);
 }
 
-// ---------- Init ----------
+document.getElementById("utcOffset").addEventListener("change", (e) => {
+  utcOffset = parseFloat(e.target.value);
+});
+
+// ---------- About toggle ----------
+function toggleAbout() {
+  const sec = document.getElementById("about-section");
+  sec.style.display = sec.style.display === "none" ? "block" : "none";
+}
+
+// ---------- Initialize ----------
 goToToday();
 startClock();
